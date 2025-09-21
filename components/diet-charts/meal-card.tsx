@@ -1,32 +1,39 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Coffee, Sun, Moon, Apple } from "lucide-react"
+import { Coffee, Sun, Moon, Apple } from "lucide-react"
+import { SwapFoodButton } from "./swap-food-button"
+import type { MealItem } from "@/types"
 
 interface MealCardProps {
   mealType: string
-  meals: Array<{
-    food_id: string
-    food_name: string
-    quantity: number
-    unit: string
-    calories: number
-  }>
-  onRegenerate: () => void
+  meals: MealItem[]
+  // This function will be passed from the parent to handle the update
+  onMealUpdate: (mealType: string, updatedMeals: MealItem[]) => void
 }
 
-const mealIcons = {
+const mealIcons: { [key: string]: React.ElementType } = {
   breakfast: Coffee,
+  brunch: Apple,
   lunch: Sun,
   dinner: Moon,
   snacks: Apple,
 }
 
-export function MealCard({ mealType, meals, onRegenerate }: MealCardProps) {
-  const Icon = mealIcons[mealType as keyof typeof mealIcons] || Apple
-  const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0)
+export function MealCard({ mealType, meals = [], onMealUpdate }: MealCardProps) {
+  const Icon = mealIcons[mealType] || Apple
+  const totalCalories = meals.reduce((sum, meal) => sum + (meal?.calories || 0), 0)
+
+  // This function is called by the SwapFoodButton
+  const handleFoodSwap = (originalFoodId: number, newFood: MealItem) => {
+    // It creates a new array with the swapped food
+    const updatedMeals = meals.map(meal => 
+      meal.food_id === originalFoodId ? newFood : meal
+    );
+    // It then calls the parent's function to update the main state
+    onMealUpdate(mealType, updatedMeals);
+  };
 
   return (
     <Card className="border-border/50">
@@ -35,28 +42,30 @@ export function MealCard({ mealType, meals, onRegenerate }: MealCardProps) {
           <div className="flex items-center space-x-2">
             <Icon className="h-4 w-4 text-primary" />
             <CardTitle className="text-base capitalize">{mealType}</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {totalCalories} cal
-            </Badge>
           </div>
-          <Button variant="ghost" size="sm" onClick={onRegenerate} className="gap-1">
-            <RefreshCw className="h-3 w-3" />
-            Swap
-          </Button>
+          <Badge variant="outline" className="text-xs">{totalCalories} cal</Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {meals.map((meal, index) => (
-          <div key={index} className="flex items-center justify-between text-sm">
-            <div className="flex-1">
-              <div className="font-medium">{meal.food_name}</div>
-              <div className="text-muted-foreground text-xs">
-                {meal.quantity} {meal.unit}
+      <CardContent className="space-y-3">
+        {meals.length > 0 ? (
+          meals.map((meal) => (
+            <div key={`${meal.food_id}-${Math.random()}`} className="flex items-center justify-between text-sm gap-2">
+              <div className="flex-1">
+                <div className="font-medium">{meal.food_name}</div>
+                <div className="text-muted-foreground text-xs">{meal.quantity} {meal.unit}</div>
               </div>
+              <div className="text-xs text-muted-foreground">{meal.calories} cal</div>
+              <SwapFoodButton
+                foodId={meal.food_id}
+                foodName={meal.food_name}
+                currentMeal={meal}
+                onFoodSwap={handleFoodSwap}
+              />
             </div>
-            <div className="text-xs text-muted-foreground">{meal.calories} cal</div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-xs text-muted-foreground">No meal assigned.</p>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,205 +1,176 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { generateDietDraft, saveDietChart } from "@/lib/actions" 
+import type { Patient, Food, DietChart, DailyPlan, MealItem } from "@/types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ArrowLeft, Save, Sparkles, Download, Utensils } from "lucide-react"
 import { MealCard } from "./meal-card"
-import { NutritionAnalysis } from "./nutrition-analysis"
 import { PDFExportDialog } from "./pdf-export-dialog"
-import { ArrowLeft, Sparkles, Save, Download, RefreshCw } from "lucide-react"
+import { NutritionAnalysis } from "./nutrition-analysis"
+
+type ConfigurationFormData = {
+  goal: string;
+  duration_weeks: number;
+  calories_target?: number | '';
+  meal_preferences?: string[];
+  exclusions?: string[];
+  special_instructions?: string;
+}
 
 interface DietChartGeneratorProps {
-  patient: any
-  configuration: any
+  patient: Patient
+  foods: Food[]
+  configuration: ConfigurationFormData
   onBack: () => void
 }
 
-// Mock meal data
-const mockMealPlan = {
-  monday: {
-    breakfast: [
-      { food_id: "1", food_name: "Oatmeal with almonds", quantity: 1, unit: "bowl", calories: 320 },
-      { food_id: "2", food_name: "Fresh berries", quantity: 0.5, unit: "cup", calories: 40 },
-    ],
-    lunch: [
-      { food_id: "3", food_name: "Quinoa salad", quantity: 1, unit: "bowl", calories: 280 },
-      { food_id: "4", food_name: "Grilled vegetables", quantity: 1, unit: "serving", calories: 120 },
-    ],
-    dinner: [
-      { food_id: "5", food_name: "Lentil curry", quantity: 1, unit: "bowl", calories: 250 },
-      { food_id: "6", food_name: "Brown rice", quantity: 0.5, unit: "cup", calories: 110 },
-    ],
-    snacks: [{ food_id: "7", food_name: "Herbal tea with dates", quantity: 1, unit: "cup", calories: 60 }],
-  },
-  // Add other days...
-}
-
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-export function DietChartGenerator({ patient, configuration, onBack }: DietChartGeneratorProps) {
+export function DietChartGenerator({ patient, foods, configuration, onBack }: DietChartGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(true)
-  const [selectedDay, setSelectedDay] = useState("Monday")
-  const [mealPlan, setMealPlan] = useState<any>(null)
-  const [generationProgress, setGenerationProgress] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dietPlan, setDietPlan] = useState<DietChart['plan_details']>(null)
+  const [selectedDay, setSelectedDay] = useState("Day 1")
   const [showPDFExport, setShowPDFExport] = useState(false)
 
   useEffect(() => {
-    // Simulate AI generation process
-    const generateDietPlan = async () => {
-      setIsGenerating(true)
-      setGenerationProgress(0)
+    const createDraft = async () => {
+      setIsGenerating(true);
+      setError(null);
+      try {
+        const draft = await generateDietDraft(configuration, patient, foods);
+        if (!draft) throw new Error("The AI could not generate a plan with the given constraints.");
+        setDietPlan(draft);
+      } catch (err: any) {
+        setError(err.message || "An unexpected error occurred during plan generation.");
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+    createDraft();
+  }, [configuration, patient, foods]);
 
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setGenerationProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(progressInterval)
-            return 100
-          }
-          return prev + 10
-        })
-      }, 200)
+  const handleMealUpdate = useCallback((mealType: string, updatedMeals: MealItem[]) => {
+    setDietPlan(prevPlan => {
+      if (!prevPlan) return null;
+      const newPlan = JSON.parse(JSON.stringify(prevPlan)); // Deep copy to ensure re-render
+      if (newPlan[selectedDay]) {
+        newPlan[selectedDay][mealType as keyof DailyPlan] = updatedMeals;
+      }
+      return newPlan;
+    });
+  }, [selectedDay]); // Dependency ensures the correct day is updated
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2500))
-
-      setMealPlan(mockMealPlan)
-      setIsGenerating(false)
+  const handleSaveChart = async () => {
+    if (!dietPlan) return;
+    setIsSaving(true);
+    try {
+      await saveDietChart(patient.id, configuration, dietPlan);
+    } catch (err: any) {
+      setError(err.message || "Failed to save the diet chart. Please try again.");
+      setIsSaving(false);
     }
-
-    generateDietPlan()
-  }, [])
-
-  const handleSaveDietChart = async () => {
-    console.log("[v0] Saving diet chart:", { patient, configuration, mealPlan })
-    // Simulate save
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    window.location.href = "/dashboard/diet-charts"
-  }
-
-  const handleRegenerateMeal = (day: string, mealType: string) => {
-    console.log("[v0] Regenerating meal:", { day, mealType })
-    // Simulate meal regeneration
-  }
+  };
 
   if (isGenerating) {
     return (
       <Card className="border-border/50">
         <CardContent className="flex flex-col items-center justify-center py-16 space-y-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-primary animate-pulse" />
-          </div>
+          <Sparkles className="h-8 w-8 text-primary animate-pulse" />
           <div className="text-center space-y-2">
-            <h3 className="text-xl font-semibold">Generating AI Diet Plan</h3>
+            <h3 className="text-xl font-semibold">Generating AI Diet Draft...</h3>
             <p className="text-muted-foreground text-pretty max-w-md">
-              Our AI is creating a personalized Ayurvedic diet plan based on {patient.name}'s prakriti and your
-              configuration...
+              The Architect AI is creating a scientifically balanced and Ayurveda-compliant plan for {patient.name}.
             </p>
           </div>
-          <div className="w-full max-w-md space-y-2">
-            <Progress value={generationProgress} className="h-2" />
-            <p className="text-sm text-center text-muted-foreground">{generationProgress}% Complete</p>
-          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+       <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader><CardTitle className="text-destructive">Generation Failed</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <AlertDescription>{error}</AlertDescription>
+          <Button variant="outline" onClick={onBack} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Configuration
+          </Button>
         </CardContent>
       </Card>
     )
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={onBack} className="gap-2 bg-transparent">
+  if (dietPlan) {
+    const dailyPlan = dietPlan[selectedDay];
+    const days = Object.keys(dietPlan);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Button variant="outline" onClick={onBack} className="gap-2 w-full sm:w-auto">
             <ArrowLeft className="h-4 w-4" />
             Back to Configuration
           </Button>
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">AI-Generated Diet Plan</h2>
-            <p className="text-sm text-muted-foreground">
-              Personalized for {patient.prakriti} constitution • {configuration.duration_weeks} weeks
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" className="gap-2 bg-transparent" onClick={() => setShowPDFExport(true)}>
-            <Download className="h-4 w-4" />
-            Export PDF
-          </Button>
-          <Button onClick={handleSaveDietChart} className="gap-2">
-            <Save className="h-4 w-4" />
-            Save Diet Chart
-          </Button>
-        </div>
-      </div>
-
-      {/* Configuration Summary */}
-      <Alert>
-        <Sparkles className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Goal:</strong> {configuration.goal} • <strong>Duration:</strong> {configuration.duration_weeks} weeks
-          {configuration.exclusions.length > 0 && (
-            <>
-              {" "}
-              • <strong>Exclusions:</strong> {configuration.exclusions.join(", ")}
-            </>
-          )}
-        </AlertDescription>
-      </Alert>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Day Selector */}
-        <div className="space-y-3">
-          <h3 className="font-semibold">Select Day</h3>
-          <div className="space-y-2">
-            {days.map((day) => (
-              <Button
-                key={day}
-                variant={selectedDay === day ? "default" : "outline"}
-                className="w-full justify-start bg-transparent"
-                onClick={() => setSelectedDay(day)}
-              >
-                {day}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Meal Plan */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg">{selectedDay} Meal Plan</h3>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <RefreshCw className="h-3 w-3" />
-              Regenerate Day
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <Button variant="outline" className="gap-2 flex-1" onClick={() => setShowPDFExport(true)}>
+              <Download className="h-4 w-4" /> Export PDF
+            </Button>
+            <Button onClick={handleSaveChart} disabled={isSaving} className="gap-2 flex-1">
+              <Save className="h-4 w-4" /> {isSaving ? "Saving..." : "Save Chart"}
             </Button>
           </div>
+        </div>
 
-          <div className="space-y-4">
-            {["breakfast", "lunch", "dinner", "snacks"].map((mealType) => (
-              <MealCard
-                key={mealType}
-                mealType={mealType}
-                meals={mealPlan?.[selectedDay.toLowerCase()]?.[mealType] || []}
-                onRegenerate={() => handleRegenerateMeal(selectedDay, mealType)}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+          <Card className="lg:sticky lg:top-6">
+            <CardHeader><CardTitle>Week View</CardTitle></CardHeader>
+            <CardContent className="flex flex-col space-y-2">
+              {days.map((day) => (
+                <Button key={day} variant={selectedDay === day ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setSelectedDay(day)}>
+                  {day}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+          
+          <div className="lg:col-span-2 space-y-6">
+             <h2 className="text-2xl font-bold">Meal Plan for {selectedDay}</h2>
+            {dailyPlan && Object.entries(dailyPlan).map(([mealType, meals]) => (
+              <MealCard 
+                key={mealType} 
+                mealType={mealType} 
+                meals={meals || []} 
+                onMealUpdate={handleMealUpdate} 
               />
             ))}
           </div>
+
+          <div className="lg:sticky lg:top-6">
+             <NutritionAnalysis 
+                selectedDay={selectedDay}
+                meals={dailyPlan}
+                targetCalories={configuration.calories_target || undefined}
+                allFoods={foods}
+             />
+          </div>
         </div>
 
-        {/* Nutrition Analysis */}
-        <div>
-          <NutritionAnalysis
-            selectedDay={selectedDay}
-            meals={mealPlan?.[selectedDay.toLowerCase()] || {}}
-            targetCalories={configuration.calories_target}
-          />
-        </div>
+        <PDFExportDialog
+          open={showPDFExport}
+          onOpenChange={setShowPDFExport}
+          dietChart={dietPlan}
+          patient={patient}
+          configuration={configuration}
+        />
       </div>
+    );
+  }
 
-      <PDFExportDialog open={showPDFExport} onOpenChange={setShowPDFExport} dietChart={mealPlan} patient={patient} />
-    </div>
-  )
+  return <p>An unexpected error occurred. Please go back and try again.</p>;
 }
+

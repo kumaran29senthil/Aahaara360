@@ -1,53 +1,39 @@
 import { Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DietChartCard } from "@/components/diet-charts/diet-chart-card"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
-import { Plus, Search, FileText } from "lucide-react"
+import { Plus, FileText } from "lucide-react"
+import { createClient } from "@/lib/supabase-server"
+import type { DietChart, Patient } from "@/types"
 
-// Mock diet chart data
-const mockDietCharts = [
-  {
-    id: "1",
-    patient_id: "1",
-    patient_name: "Priya Sharma",
-    patient_prakriti: "Vata-Pitta",
-    dietitian_id: "1",
-    goal: "Weight management and digestive health",
-    exclusions: ["Dairy", "Gluten"],
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z",
-    status: "Active",
-  },
-  {
-    id: "2",
-    patient_id: "2",
-    patient_name: "Rajesh Kumar",
-    patient_prakriti: "Kapha-Vata",
-    dietitian_id: "1",
-    goal: "Diabetes management and weight loss",
-    exclusions: ["Sugar", "Refined carbs"],
-    created_at: "2024-01-14T10:00:00Z",
-    updated_at: "2024-01-14T10:00:00Z",
-    status: "Active",
-  },
-  {
-    id: "3",
-    patient_id: "3",
-    patient_name: "Anita Patel",
-    patient_prakriti: "Pitta",
-    dietitian_id: "1",
-    goal: "PCOS management and hormonal balance",
-    exclusions: ["Spicy foods", "Caffeine"],
-    created_at: "2024-01-13T10:00:00Z",
-    updated_at: "2024-01-13T10:00:00Z",
-    status: "Draft",
-  },
-]
+// We need a new type for our joined data
+type DietChartWithPatient = DietChart & {
+  patients: Pick<Patient, 'name' | 'prakriti'> | null;
+}
 
-export default function DietChartsPage() {
+export default async function DietChartsPage() {
+  const supabase = createClient();
+
+  // -> This is the live query to your Supabase database.
+  // It fetches all diet charts AND the related patient's name and prakriti.
+  const { data: dietCharts, error } = await supabase
+    .from('diet_charts')
+    .select(`
+      *,
+      patients (
+        name,
+        prakriti
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching diet charts:", error);
+  }
+  
+  const charts = (dietCharts as DietChartWithPatient[]) ?? [];
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -55,59 +41,25 @@ export default function DietChartsPage() {
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-balance">Diet Charts</h1>
             <p className="text-muted-foreground text-pretty">
-              Create and manage personalized Ayurvedic diet plans for your patients
+              Manage personalized Ayurvedic diet plans for your patients
             </p>
           </div>
+          {/* We will make this button smarter later */}
           <Button asChild className="gap-2">
-            <a href="/dashboard/diet-charts/new">
+              <a href="/dashboard/diet-charts/new">
               <Plus className="h-4 w-4" />
               Create Diet Chart
-            </a>
-          </Button>
+          </a>
+       </Button>
         </div>
 
-        {/* Search and Filters */}
-        <Card className="border-border/50">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by patient name or goal..." className="pl-10" />
-              </div>
-              <div className="flex gap-2">
-                <Select>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Prakriti" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vata">Vata</SelectItem>
-                    <SelectItem value="pitta">Pitta</SelectItem>
-                    <SelectItem value="kapha">Kapha</SelectItem>
-                    <SelectItem value="vata-pitta">Vata-Pitta</SelectItem>
-                    <SelectItem value="pitta-kapha">Pitta-Kapha</SelectItem>
-                    <SelectItem value="kapha-vata">Kapha-Vata</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Filters can be added later */}
+        {/* <Card> ... </Card> */}
 
-        {/* Diet Charts Grid */}
-        <Suspense fallback={<div>Loading diet charts...</div>}>
-          {mockDietCharts.length > 0 ? (
+        <Suspense fallback={<div className="text-center p-8">Loading diet charts...</div>}>
+          {charts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockDietCharts.map((chart) => (
+              {charts.map((chart) => (
                 <DietChartCard key={chart.id} dietChart={chart} />
               ))}
             </div>
@@ -120,13 +72,13 @@ export default function DietChartsPage() {
                 <div className="text-center space-y-2">
                   <h3 className="text-lg font-semibold">No diet charts yet</h3>
                   <p className="text-muted-foreground text-pretty max-w-md">
-                    Start creating personalized Ayurvedic diet plans for your patients
+                    Select a patient from your patient list to create their first diet plan.
                   </p>
                 </div>
                 <Button asChild className="gap-2">
-                  <a href="/dashboard/diet-charts/new">
+                  <a href="/dashboard/patients">
                     <Plus className="h-4 w-4" />
-                    Create Your First Diet Chart
+                    Go to Patients
                   </a>
                 </Button>
               </CardContent>

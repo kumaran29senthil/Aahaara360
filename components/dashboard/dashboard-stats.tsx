@@ -1,35 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Calendar, FileText, TrendingUp } from "lucide-react"
+import { Users, FileText, UserPlus, HeartPulse } from "lucide-react"
 
-export function DashboardStats() {
+interface DashboardStatsProps {
+  patientCount: number;
+  chartCount: number;
+  newPatientsCount: number;
+  commonPrakriti: string;
+}
+
+export function DashboardStats({ patientCount, chartCount, newPatientsCount, commonPrakriti }: DashboardStatsProps) {
   const stats = [
     {
       title: "Total Patients",
-      value: "127",
-      change: "+12 this month",
+      value: patientCount.toString(),
       icon: Users,
       color: "text-blue-600",
-    },
-    {
-      title: "Appointments Today",
-      value: "8",
-      change: "3 remaining",
-      icon: Calendar,
-      color: "text-green-600",
+      change: "All time total"
     },
     {
       title: "Diet Charts Created",
-      value: "45",
-      change: "+8 this week",
+      value: chartCount.toString(),
       icon: FileText,
       color: "text-purple-600",
+      change: "All time total"
     },
     {
-      title: "Success Rate",
-      value: "94%",
-      change: "+2% improvement",
-      icon: TrendingUp,
+      title: "New Patients (This Month)",
+      value: newPatientsCount.toString(),
+      icon: UserPlus,
+      color: "text-green-600",
+      change: "Since the 1st of the month"
+    },
+    {
+      title: "Most Common Prakriti",
+      value: commonPrakriti,
+      icon: HeartPulse,
       color: "text-orange-600",
+      change: "Among all your patients"
     },
   ]
 

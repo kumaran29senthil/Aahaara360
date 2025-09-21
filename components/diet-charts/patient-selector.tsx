@@ -1,74 +1,52 @@
 "use client"
 
 import { useState } from "react"
+import type { Patient } from "@/types" // Import the Patient type
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation" // Use useRouter for client-side navigation
 
-// Mock patient data
-const mockPatients = [
-  {
-    id: "1",
-    name: "Priya Sharma",
-    age: 32,
-    gender: "Female",
-    prakriti: "Vata-Pitta",
-    medical_history: "No major medical issues",
-    allergies: "None",
-  },
-  {
-    id: "2",
-    name: "Rajesh Kumar",
-    age: 45,
-    gender: "Male",
-    prakriti: "Kapha-Vata",
-    medical_history: "Diabetes Type 2",
-    allergies: "Nuts",
-  },
-  {
-    id: "3",
-    name: "Anita Patel",
-    age: 28,
-    gender: "Female",
-    prakriti: "Pitta",
-    medical_history: "PCOS",
-    allergies: "Dairy",
-  },
-]
+// This component now receives the list of patients as a prop.
+interface PatientSelectorProps {
+  patients: Patient[];
+}
 
-export function PatientSelector() {
+export function PatientSelector({ patients }: PatientSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
+  const router = useRouter()
 
-  const filteredPatients = mockPatients.filter((patient) =>
+  // Filter patients on the client-side based on the search term
+  const filteredPatients = patients.filter((patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  // Helper function to get initials from a name
   const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase()
   }
 
-  const getPrakritiColor = (prakriti: string) => {
+  // Helper function to get color based on Prakriti
+  const getPrakritiColor = (prakriti: string | null | undefined) => {
+    if (!prakriti) return "bg-gray-100 text-gray-800";
     if (prakriti.includes("Vata")) return "bg-blue-100 text-blue-800"
     if (prakriti.includes("Pitta")) return "bg-red-100 text-red-800"
     if (prakriti.includes("Kapha")) return "bg-green-100 text-green-800"
     return "bg-gray-100 text-gray-800"
   }
 
-  const handlePatientSelect = (patientId: string) => {
-    window.location.href = `/dashboard/diet-charts/${patientId}/new`
+  // Navigate to the dynamic page for the selected patient
+  const handleContinue = (patientId: string) => {
+    router.push(`/dashboard/diet-charts/${patientId}/new`)
   }
 
   return (
     <div className="space-y-6">
-      {/* Search */}
+      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
@@ -80,15 +58,15 @@ export function PatientSelector() {
       </div>
 
       {/* Patient List */}
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
         {filteredPatients.length > 0 ? (
           filteredPatients.map((patient) => (
             <Card
               key={patient.id}
               className={`border-border/50 hover:shadow-md transition-all cursor-pointer ${
-                selectedPatient === patient.id ? "ring-2 ring-primary" : ""
+                selectedPatientId === patient.id ? "ring-2 ring-primary" : ""
               }`}
-              onClick={() => setSelectedPatient(patient.id)}
+              onClick={() => setSelectedPatientId(patient.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -106,12 +84,7 @@ export function PatientSelector() {
                         <span>{patient.gender}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={`text-xs ${getPrakritiColor(patient.prakriti)}`}>{patient.prakriti}</Badge>
-                        {patient.allergies !== "None" && (
-                          <Badge variant="outline" className="text-xs">
-                            Allergies: {patient.allergies}
-                          </Badge>
-                        )}
+                         <Badge className={`text-xs ${getPrakritiColor(patient.prakriti)}`}>{patient.prakriti || 'N/A'}</Badge>
                       </div>
                     </div>
                   </div>
@@ -127,10 +100,10 @@ export function PatientSelector() {
         )}
       </div>
 
-      {/* Continue Button */}
-      {selectedPatient && (
+      {/* Continue Button appears only when a patient is selected */}
+      {selectedPatientId && (
         <div className="flex justify-end pt-4 border-t border-border">
-          <Button onClick={() => handlePatientSelect(selectedPatient)} className="gap-2">
+          <Button onClick={() => handleContinue(selectedPatientId)} className="gap-2">
             Continue with Selected Patient
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -139,3 +112,4 @@ export function PatientSelector() {
     </div>
   )
 }
+

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Eye, Edit, FileText, Trash2, Phone, Mail } from "lucide-react"
 import type { Patient } from "@/types"
+import Link from "next/link"
 
 interface PatientCardProps {
   patient: Patient
@@ -90,18 +91,24 @@ export function PatientCard({ patient }: PatientCardProps) {
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
-            <Eye className="h-3 w-3" />
-            View
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
-            <Edit className="h-3 w-3" />
-            Edit
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
+          <Link href={`/dashboard/patients/${patient.id}`}>
+              <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
+                  <Eye className="h-3 w-3" />
+                    View
+              </Button>
+          </Link>
+            <Link href={`/dashboard/patients/${patient.id}/edit`}>
+              <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
+                  <Edit className="h-3 w-3" />
+                    Edit
+                </Button>
+            </Link>
+            <Link href={`/dashboard/diet-charts/${patient.id}/new`}>
+            <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
             <FileText className="h-3 w-3" />
             Diet
           </Button>
+            </Link>
           <Button variant="outline" size="sm" className="gap-1 bg-transparent">
             <Trash2 className="h-3 w-3" />
           </Button>

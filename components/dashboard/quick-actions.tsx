@@ -6,7 +6,7 @@ export function QuickActions() {
   const actions = [
     {
       title: "Add New Patient",
-      description: "Register a new patient and assess their prakriti",
+      description: "Register a new patient and do prakriti analysis",
       icon: UserPlus,
       href: "/dashboard/patients/new",
     },
@@ -21,13 +21,7 @@ export function QuickActions() {
       description: "Add or update food items and properties",
       icon: Database,
       href: "/dashboard/foods",
-    },
-    {
-      title: "Schedule Appointment",
-      description: "Book follow-up appointments",
-      icon: Calendar,
-      href: "/dashboard/appointments/new",
-    },
+    }
   ]
 
   return (

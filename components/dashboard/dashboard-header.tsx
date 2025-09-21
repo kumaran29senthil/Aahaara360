@@ -1,7 +1,19 @@
+"use client" // This must be a client component to handle user clicks.
+
 import { Button } from "@/components/ui/button"
 import { Bell, Settings, LogOut } from "lucide-react"
+import { supabase } from "@/lib/supabase" // Import the client-side Supabase client
+import { useRouter } from "next/navigation"
 
 export function DashboardHeader() {
+  const router = useRouter()
+
+  // This async function signs the user out and redirects them to the login page.
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/") // Redirect to the homepage/login page.
+  }
+
   return (
     <header className="border-b border-border bg-card">
       <div className="container mx-auto px-4 py-4">
@@ -22,7 +34,8 @@ export function DashboardHeader() {
             <Button variant="ghost" size="icon">
               <Settings className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon">
+            {/* The onClick handler is added here to trigger the logout function. */}
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

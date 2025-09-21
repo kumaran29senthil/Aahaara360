@@ -15,34 +15,35 @@ interface FoodCardProps {
 export function FoodCard({ food }: FoodCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
-  const getDoshaEffectColor = (effect: "increase" | "decrease" | "neutral") => {
+  const getDoshaEffectColor = (effect?: string | null) => {
     switch (effect) {
-      case "increase":
-        return "bg-red-100 text-red-800"
-      case "decrease":
-        return "bg-green-100 text-green-800"
-      case "neutral":
-        return "bg-gray-100 text-gray-800"
+      case "aggravates": return "bg-red-100 text-red-800"
+      case "pacifies": return "bg-green-100 text-green-800"
+      default: return "bg-gray-100 text-gray-800"
     }
   }
 
-  const getDoshaEffectSymbol = (effect: "increase" | "decrease" | "neutral") => {
+  const getDoshaEffectSymbol = (effect?: string | null) => {
     switch (effect) {
-      case "increase":
-        return "↑"
-      case "decrease":
-        return "↓"
-      case "neutral":
-        return "="
+      case "aggravates": return "↑"
+      case "pacifies": return "↓"
+      default: return "="
     }
   }
 
-  const getViryaIcon = (virya: string) => {
-    return virya.toLowerCase().includes("heating") ? (
+  const getViryaIcon = (virya?: string | null) => {
+    return virya?.toLowerCase().includes("heating") ? (
       <Flame className="h-3 w-3 text-red-500" />
     ) : (
       <Snowflake className="h-3 w-3 text-blue-500" />
     )
+  }
+
+  // -> THE FIX: Reconstruct the dosha_effects object from the individual columns
+  const dosha_effects = {
+    vata: food.vata_effect,
+    pitta: food.pitta_effect,
+    kapha: food.kapha_effect,
   }
 
   return (
@@ -54,19 +55,20 @@ export function FoodCard({ food }: FoodCardProps) {
               <h3 className="font-semibold text-lg">{food.name}</h3>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-xs">
-                  {food.calories_per_100g} cal/100g
+                  {food.calories} cal / {food.serving_size}
                 </Badge>
-                <div className="flex items-center space-x-1">
-                  {getViryaIcon(food.virya)}
-                  <span className="text-xs text-muted-foreground">{food.virya}</span>
-                </div>
+                {food.virya && (
+                  <div className="flex items-center space-x-1">
+                    {getViryaIcon(food.virya)}
+                    <span className="text-xs text-muted-foreground">{food.virya}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Nutritional Info */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="space-y-1">
               <div className="text-sm font-medium">{food.protein_g}g</div>
@@ -82,15 +84,13 @@ export function FoodCard({ food }: FoodCardProps) {
             </div>
           </div>
 
-          {/* Ayurvedic Properties */}
           <div className="space-y-2">
             <div className="space-y-1">
               <div className="text-xs font-medium text-muted-foreground">Rasa (Taste)</div>
               <div className="flex flex-wrap gap-1">
-                {food.rasa.split(", ").map((rasa, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {rasa}
-                  </Badge>
+                {/* -> THE FIX: Map directly over the 'rasa' array with a safety check */}
+                {food.rasa?.map((rasa, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">{rasa}</Badge>
                 ))}
               </div>
             </div>
@@ -98,7 +98,7 @@ export function FoodCard({ food }: FoodCardProps) {
             <div className="space-y-1">
               <div className="text-xs font-medium text-muted-foreground">Dosha Effects</div>
               <div className="flex items-center space-x-2">
-                {Object.entries(food.dosha_effects).map(([dosha, effect]) => (
+                {Object.entries(dosha_effects).map(([dosha, effect]) => (
                   <Badge key={dosha} className={`text-xs ${getDoshaEffectColor(effect)}`}>
                     {dosha.charAt(0).toUpperCase()}
                     {getDoshaEffectSymbol(effect)}
@@ -108,20 +108,12 @@ export function FoodCard({ food }: FoodCardProps) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center space-x-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 gap-1 bg-transparent"
-              onClick={() => setShowDetails(true)}
-            >
-              <Eye className="h-3 w-3" />
-              Details
+            <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent" onClick={() => setShowDetails(true)}>
+              <Eye className="h-3 w-3" /> Details
             </Button>
             <Button variant="outline" size="sm" className="flex-1 gap-1 bg-transparent">
-              <Edit className="h-3 w-3" />
-              Edit
+              <Edit className="h-3 w-3" /> Edit
             </Button>
             <Button variant="outline" size="sm" className="gap-1 bg-transparent">
               <Trash2 className="h-3 w-3" />

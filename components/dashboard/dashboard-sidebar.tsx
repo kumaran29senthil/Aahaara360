@@ -1,6 +1,7 @@
+// components/dashboard/dashboard-sidebar.tsx
 "use client"
 
-import { Home, Users, FileText, Database, Calendar, Settings, LogOut } from "lucide-react"
+import { Home, Users, FileText, Database, Calendar, Settings, LogOut, Camera, Utensils, FileBox } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +23,21 @@ const navigationItems = [
     icon: Home,
   },
   {
+    title: "Food Scanner",
+    url: "/dashboard/scanner",
+    icon: Camera,
+  },
+  {
+    title: "Recipe Generator",
+    url: "/dashboard/recipe",
+    icon: Utensils,
+  },
+  {
+    title: "Document Summarizer",
+    url: "/dashboard/summarizer",
+    icon: FileBox,
+  },
+  {
     title: "Patients",
     url: "/dashboard/patients",
     icon: Users,
@@ -35,12 +51,7 @@ const navigationItems = [
     title: "Food Database",
     url: "/dashboard/foods",
     icon: Database,
-  },
-  {
-    title: "Appointments",
-    url: "/dashboard/appointments",
-    icon: Calendar,
-  },
+  }
 ]
 
 export function DashboardSidebar() {
@@ -63,8 +74,8 @@ export function DashboardSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
+                    <a href={item.url} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                      <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </a>
                   </SidebarMenuButton>
@@ -82,25 +93,33 @@ export function DashboardSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/patients/new">
-                    <Users />
+                  <a href="/dashboard/patients/new" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <Users className="h-4 w-4" />
                     <span>Add Patient</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/diet-charts/new">
-                    <FileText />
+                  <a href="/dashboard/diet-charts/new" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <FileText className="h-4 w-4" />
                     <span>Create Diet Chart</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/foods/new">
-                    <Database />
+                  <a href="/dashboard/foods/new" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <Database className="h-4 w-4" />
                     <span>Add Food Item</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <a href="/dashboard/summarizer" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <FileBox className="h-4 w-4" />
+                    <span>Summarize Document</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -113,16 +132,8 @@ export function DashboardSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/dashboard/settings">
-                <Settings />
-                <span>Settings</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <a href="/">
-                <LogOut />
+              <a href="/" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </a>
             </SidebarMenuButton>
